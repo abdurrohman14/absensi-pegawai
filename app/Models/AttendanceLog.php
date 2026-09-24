@@ -8,15 +8,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AttendanceLog extends Model
 {
-     protected $fillable = [
+     protected $table = 'attendance_logs';
+
+    protected $fillable = [
         'pegawai_id',
         'tanggal',
         'jam',
         'sumber',
     ];
 
+    protected $casts = [
+        'tanggal' => 'date',
+    ];
+
+    /**
+     * Pegawai pemilik log.
+     */
     public function pegawai(): BelongsTo
     {
-        return $this->belongsTo(Pegawai::class);
+        return $this->belongsTo(
+            Pegawai::class,
+            'pegawai_id'
+        );
     }
 }

@@ -7,7 +7,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Route::post(
-//     '/attendance/process',
-//     [AttendanceProcessorController::class, 'process']
-// );
+Route::get(
+    '/attendance/view',
+    [AttendanceProcessorController::class, 'view']
+);

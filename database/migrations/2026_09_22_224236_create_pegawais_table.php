@@ -13,27 +13,12 @@ return new class extends Migration
     {
         Schema::create('pegawais', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('departemen_id')
-                ->constrained('departemens')
-                ->cascadeOnUpdate()
-                ->restrictOnDelete();
-
-            $table->foreignId('jadwal_id')
-                ->nullable()
-                ->constrained('jadwals')
-                ->nullOnDelete();
-
-            $table->string('nip', 50)->unique();
-            $table->string('nama');
-            $table->string('jabatan')->nullable();
-
             // ID yang terdaftar pada mesin fingerprint.
             $table->unsignedInteger('fingerprint_id')->unique();
-
-            $table->enum('status', ['aktif', 'nonaktif'])
-                ->default('aktif');
+            $table->string('nama');
+            // $table->enum('status', ['aktif', 'nonaktif'])
+            //     ->default('aktif');
             $table->timestamps();
-            $table->index('nama');
         });
     }
 

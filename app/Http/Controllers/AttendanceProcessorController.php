@@ -3,12 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Absensi;
 use App\Models\Pegawai;
 use App\Services\AttendanceProcessor;
 use Illuminate\Http\Request;
 
 class AttendanceProcessorController extends Controller
 {
+    public function view(){
+        $absensi = Absensi::all();
+        $pegawai = Pegawai::all();
+
+        return view(
+            'absensi.view', compact('absensi', 'pegawai')
+        );
+    }
      public function process(
         Request $request,
         AttendanceProcessor $processor
@@ -18,8 +27,7 @@ class AttendanceProcessorController extends Controller
             'tanggal' => ['required', 'date'],
         ]);
 
-        $pegawai = Pegawai::with('jadwal')
-            ->findOrFail($request->pegawai_id);
+        $pegawai = Pegawai::findOrFail($request->pegawai_id);
 
         $absensi = $processor->process(
             $pegawai,

@@ -5,22 +5,22 @@ namespace App\Services;
 use App\Models\Absensi;
 use App\Models\AttendanceLog;
 use App\Models\Pegawai;
-use Illuminate\Support\Carbon;
 
 class AttendanceProcessor
 {
     /**
      * Memproses absensi satu pegawai untuk satu tanggal.
+     *
+     * Pola scan:
+     * 1 scan  = masuk
+     * 2 scan  = masuk + pulang
+     * 3 scan  = masuk + istirahat + pulang
+     * >3 scan = scan pertama + scan kedua + scan terakhir
      */
     public function process(
         Pegawai $pegawai,
         string $tanggal
     ): ?Absensi {
-        $jadwal = $pegawai->jadwal;
-
-        if (!$jadwal) {
-            return null;
-        }
 
         $logs = AttendanceLog::query()
             ->where('pegawai_id', $pegawai->id)
@@ -28,30 +28,58 @@ class AttendanceProcessor
             ->orderBy('jam')
             ->get();
 
-        /*
-         * Tidak ada fingerprint log.
-         *
-         * Kita tidak langsung membuat Alpha di sini karena
-         * izin/sakit/cuti bisa saja dimasukkan secara manual.
+        /**
+         * Tidak ada data fingerprint
+         * untuk pegawai dan tanggal tersebut.
          */
         if ($logs->isEmpty()) {
             return null;
         }
 
-        $jamMasuk = $logs->first()->jam;
-        $jamPulang = $logs->count() > 1
-            ? $logs->last()->jam
-            : null;
+        /*
+         * Default.
+         */
+        $jamMasuk = null;
+        $jamIstirahat = null;
+        $jamPulang = null;
 
         /*
-         * Tentukan status kehadiran.
+         * 1 scan:
+         * dianggap sebagai jam masuk.
          */
-        $status = $this->determineStatus(
-            $tanggal,
-            $jamMasuk,
-            $jadwal
-        );
+        if ($logs->count() === 1) {
 
+            $jamMasuk = $logs->first()->jam;
+        }
+
+        /*
+         * 2 scan:
+         * scan pertama = masuk
+         * scan kedua   = pulang
+         */
+        elseif ($logs->count() === 2) {
+
+            $jamMasuk = $logs->first()->jam;
+            $jamPulang = $logs->last()->jam;
+        }
+
+        /*
+         * 3 scan atau lebih:
+         * scan pertama = masuk
+         * scan kedua   = istirahat
+         * scan terakhir = pulang
+         */
+        else {
+
+            $jamMasuk = $logs->first()->jam;
+            $jamIstirahat = $logs->get(1)->jam;
+            $jamPulang = $logs->last()->jam;
+        }
+
+        /*
+         * Simpan atau perbarui rekap absensi
+         * berdasarkan pegawai dan tanggal.
+         */
         return Absensi::updateOrCreate(
             [
                 'pegawai_id' => $pegawai->id,
@@ -59,33 +87,9 @@ class AttendanceProcessor
             ],
             [
                 'jam_masuk' => $jamMasuk,
+                'jam_istirahat' => $jamIstirahat,
                 'jam_pulang' => $jamPulang,
-                'status' => $status,
-                'keterangan' => null,
             ]
         );
-    }
-
-    /**
-     * Menentukan apakah pegawai hadir atau terlambat.
-     */
-    private function determineStatus(
-        string $tanggal,
-        string $jamMasuk,
-        $jadwal
-    ): string {
-        $batasTerlambat = Carbon::parse(
-            $tanggal . ' ' . $jadwal->jam_masuk
-        )->addMinutes(
-            $jadwal->toleransi_menit
-        );
-
-        $waktuMasuk = Carbon::parse(
-            $tanggal . ' ' . $jamMasuk
-        );
-
-        return $waktuMasuk->gt($batasTerlambat)
-            ? 'terlambat'
-            : 'hadir';
     }
 }

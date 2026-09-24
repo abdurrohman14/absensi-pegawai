@@ -12,33 +12,36 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Pegawai extends Model
 {
+    protected $table = 'pegawais';
+
     protected $fillable = [
-        'departemen_id',
-        'jadwal_id',
-        'nip',
-        'nama',
-        'jabatan',
         'fingerprint_id',
-        'status',
+        'nama',
     ];
 
-    public function departemen(): BelongsTo
-    {
-        return $this->belongsTo(Departemen::class);
-    }
+    protected $casts = [
+        'fingerprint_id' => 'integer',
+    ];
 
-    public function jadwal(): BelongsTo
-    {
-        return $this->belongsTo(Jadwal::class);
-    }
-
+    /**
+     * Semua log fingerprint pegawai.
+     */
     public function attendanceLogs(): HasMany
     {
-        return $this->hasMany(AttendanceLog::class);
+        return $this->hasMany(
+            AttendanceLog::class,
+            'pegawai_id'
+        );
     }
 
+    /**
+     * Rekap absensi pegawai.
+     */
     public function absensis(): HasMany
     {
-        return $this->hasMany(Absensi::class);
+        return $this->hasMany(
+            Absensi::class,
+            'pegawai_id'
+        );
     }
 }

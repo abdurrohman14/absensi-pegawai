@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('departemens', function (Blueprint $table) {
-            $table->id();
-            $table->string('nama_departemen');
-            $table->string('kode', 20)->unique();
-            $table->boolean('status')->default(true);
-            $table->timestamps();
-        });
+        // Schema::create('departemens', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->string('nama_departemen');
+        //     $table->string('kode', 20)->unique();
+        //     $table->boolean('status')->default(true);
+        //     $table->timestamps();
+        // });
     }
 
     /**

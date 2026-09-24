@@ -9,18 +9,18 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::create('jadwals', function (Blueprint $table) {
-            $table->id();
-            $table->string('nama_jadwal');
-            $table->time('jam_masuk');
-            $table->time('jam_pulang');
-            $table->unsignedInteger('toleransi_menit')->default(15);
-            $table->boolean('status')->default(true);
-            $table->timestamps();
-        });
-    }
+    // public function up(): void
+    // {
+    //     Schema::create('jadwals', function (Blueprint $table) {
+    //         $table->id();
+    //         $table->string('nama_jadwal');
+    //         $table->time('jam_masuk');
+    //         $table->time('jam_pulang');
+    //         $table->unsignedInteger('toleransi_menit')->default(15);
+    //         $table->boolean('status')->default(true);
+    //         $table->timestamps();
+    //     });
+    // }
 
     /**
      * Reverse the migrations.
