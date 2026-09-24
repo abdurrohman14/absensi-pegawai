@@ -11,3 +11,4 @@ Route::get(
     '/attendance/view',
     [AttendanceProcessorController::class, 'view']
 );
+
