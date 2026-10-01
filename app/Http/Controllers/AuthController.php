@@ -12,7 +12,7 @@ class AuthController extends Controller
     {
         // Jika sudah login, redirect ke halaman absensi.view
         if (Auth::check()) {
-            return view('absensi.view');
+            return view('dashboard');
         }
         return view('auth.login');
     }

@@ -10,15 +10,57 @@ use Illuminate\Http\Request;
 
 class AttendanceProcessorController extends Controller
 {
-    public function view(){
-        $absensi = Absensi::all();
-        $pegawai = Pegawai::all();
+    public function view(Request $request)
+    {
+        // Filter bulan dan tahun
+        $bulanAktif = (int) $request->get('bulan', now()->month);
+        $tahunAktif = (int) $request->get('tahun', now()->year);
 
-        return view(
-            'absensi.view', compact('absensi', 'pegawai')
-        );
+        // Query absensi berdasarkan periode
+        $query = Absensi::with('pegawai')
+            ->whereMonth('tanggal', $bulanAktif)
+            ->whereYear('tanggal', $tahunAktif);
+
+        // Filter pegawai jika dipilih
+        if ($request->filled('pegawai_id')) {
+            $query->where('pegawai_id', $request->pegawai_id);
+        }
+
+        // Ambil data absensi
+        $absensiData = $query
+            ->orderBy('tanggal', 'desc')
+            ->get();
+
+        // Data pegawai untuk dropdown
+        $pegawais = Pegawai::orderBy('nama', 'asc')->get();
+
+        // Statistik
+        $totalData = $absensiData->count();
+
+        $totalMasuk = $absensiData
+            ->whereNotNull('jam_masuk')
+            ->count();
+
+        $totalIstirahat = $absensiData
+            ->whereNotNull('jam_istirahat')
+            ->count();
+
+        $totalPulang = $absensiData
+            ->whereNotNull('jam_pulang')
+            ->count();
+
+        return view('dashboard', compact(
+            'absensiData',
+            'pegawais',
+            'bulanAktif',
+            'tahunAktif',
+            'totalData',
+            'totalMasuk',
+            'totalIstirahat',
+            'totalPulang'
+        ));
     }
-     public function process(
+    public function process(
         Request $request,
         AttendanceProcessor $processor
     ) {

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{{-- <!DOCTYPE html>
 <html lang="id">
 
 <head>
@@ -1406,7 +1406,7 @@
             </a>
 
 
-            <a href="{{ route('attendance.view') }}" class="menu-link">
+            <a href="{{ route('pegawai.index') }}" class="menu-link">
 
                 <i class="bi bi-calendar-check"></i>
 
@@ -2244,4 +2244,4 @@
 
 </body>
 
-</html>
+</html> --}}

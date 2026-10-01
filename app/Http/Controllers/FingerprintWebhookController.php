@@ -17,11 +17,8 @@ class FingerprintWebhookController extends Controller
     ) {
         /*
         |--------------------------------------------------------------------------
-        | Simpan payload untuk sementara di log
+        | Simpan payload asli ke log Laravel
         |--------------------------------------------------------------------------
-        | Ini sangat berguna saat pertama kali menghubungkan Fingerspot.
-        | Kita bisa melihat format data asli yang dikirim oleh Fingerspot
-        | sebelum menentukan field finalnya.
         */
 
         Log::info('FINGERSPOT WEBHOOK RECEIVED', [
@@ -40,51 +37,57 @@ class FingerprintWebhookController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Untuk tahap awal:
-        |
-        | Kita belum mengunci nama field dari Fingerspot.
-        | Karena payload resmi webhook harus kita sesuaikan setelah
-        | melihat konfigurasi Developer Fingerspot.
-        |
-        | Sementara kita coba beberapa nama field yang umum digunakan.
+        | Pastikan event adalah attlog
         |--------------------------------------------------------------------------
         */
 
-        $fingerprintId =
-            $data['fingerprint_id']
-            ?? $data['fingerprintId']
-            ?? $data['user_id']
-            ?? $data['userId']
-            ?? $data['pin']
-            ?? $data['id'];
-
-        $tanggal =
-            $data['tanggal']
-            ?? $data['date']
-            ?? $data['attendance_date'];
-
-        $jam =
-            $data['jam']
-            ?? $data['time']
-            ?? $data['attendance_time'];
+        if (($data['type'] ?? null) !== 'attlog') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Event bukan attlog.',
+            ], 400);
+        }
 
         /*
         |--------------------------------------------------------------------------
-        | Validasi data minimum
+        | Ambil cloud ID
         |--------------------------------------------------------------------------
         */
 
-        if (!$fingerprintId || !$tanggal || !$jam) {
+        $cloudId = $data['cloud_id'] ?? null;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ambil data attendance dari Fingerspot
+        |--------------------------------------------------------------------------
+        */
+
+        $fingerprintId = data_get($data, 'data.pin');
+        $scan = data_get($data, 'data.scan');
+        $verify = data_get($data, 'data.verify');
+        $statusScan = data_get($data, 'data.status_scan');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validasi payload
+        |--------------------------------------------------------------------------
+        */
+
+        if (!$cloudId || !$fingerprintId || !$scan) {
+
+            Log::warning('FINGERSPOT WEBHOOK DATA TIDAK LENGKAP', [
+                'payload' => $data,
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Data webhook belum lengkap.',
-                'received' => $data,
+                'message' => 'Data webhook tidak lengkap.',
             ], 422);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Cari pegawai berdasarkan fingerprint ID
+        | Cari pegawai berdasarkan fingerprint ID / PIN
         |--------------------------------------------------------------------------
         */
 
@@ -94,9 +97,10 @@ class FingerprintWebhookController extends Controller
         )->first();
 
         if (!$pegawai) {
+
             Log::warning('FINGERSPOT UNKNOWN FINGERPRINT ID', [
                 'fingerprint_id' => $fingerprintId,
-                'payload' => $data,
+                'cloud_id' => $cloudId,
             ]);
 
             return response()->json([
@@ -108,33 +112,38 @@ class FingerprintWebhookController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Normalisasi tanggal dan jam
+        | Pisahkan tanggal dan jam dari field scan
         |--------------------------------------------------------------------------
+        |
+        | Contoh:
+        | 2026-10-01 07:15
+        |
         */
 
         try {
-            $tanggalNormal = Carbon::parse($tanggal)
-                ->format('Y-m-d');
 
-            $jamNormal = Carbon::parse($jam)
-                ->format('H:i:s');
+            $scanDateTime = Carbon::parse($scan);
+
+            $tanggalNormal = $scanDateTime->format('Y-m-d');
+
+            $jamNormal = $scanDateTime->format('H:i:s');
+
         } catch (\Throwable $e) {
 
-            Log::error('FINGERSPOT INVALID DATE/TIME', [
-                'tanggal' => $tanggal,
-                'jam' => $jam,
+            Log::error('FINGERSPOT INVALID SCAN TIME', [
+                'scan' => $scan,
                 'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Format tanggal atau jam tidak valid.',
+                'message' => 'Format waktu scan tidak valid.',
             ], 422);
         }
 
         /*
         |--------------------------------------------------------------------------
-        | Simpan attendance log
+        | Simpan raw attendance log
         |--------------------------------------------------------------------------
         */
 
@@ -166,12 +175,15 @@ class FingerprintWebhookController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Data absensi berhasil diterima.',
+            'message' => 'Realtime attendance berhasil diterima.',
             'data' => [
+                'cloud_id' => $cloudId,
                 'fingerprint_id' => $pegawai->fingerprint_id,
                 'nama' => $pegawai->nama,
                 'tanggal' => $tanggalNormal,
                 'jam' => $jamNormal,
+                'verify' => $verify,
+                'status_scan' => $statusScan,
                 'attendance_log_id' => $attendanceLog->id,
                 'absensi_id' => $absensi?->id,
             ],

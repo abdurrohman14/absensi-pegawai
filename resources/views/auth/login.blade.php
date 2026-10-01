@@ -247,7 +247,7 @@
 
                 <div class="logo-wrapper">
 
-                    <img src="{{ asset('assets/images/Logo-Sekolah.png') }}" alt="Logo Sekolah" class="login-logo"
+                    <img src="{{ asset('assets/images/logo ptt.png') }}" alt="Logo Sekolah" class="login-logo"
                         onerror="this.style.display='none';">
 
                 </div>

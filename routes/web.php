@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttendanceProcessorController;
+use App\Http\Controllers\PegawaiController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -18,6 +19,8 @@ Route::middleware('auth')->group(function () {
         '/attendance/view',
         [AttendanceProcessorController::class, 'view']
     )->name('attendance.view');
+
+    Route::resource('pegawai', PegawaiController::class);
 
     Route::post('/logout', [App\Http\Controllers\AuthController::class, 'Logout'])->name('logout');
 });
